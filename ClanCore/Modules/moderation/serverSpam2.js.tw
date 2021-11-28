@@ -1,0 +1,96 @@
+
+require('dotenv').config();
+
+module.exports = (client, chalk, args) => {
+    // const SQLite = require("better-sqlite3");
+    // const sql_autoban = new SQLite('./Database/sqlite/moderation/moderation.sqlite');
+    // const sql_Onoff = new SQLite('./Database/sqlite/config/onoff.sqlite');
+    // client.getLang = sql_Onoff.prepare("SELECT * FROM lang");
+    // for (const row_lang of client.getLang.all()) {
+    //     let lang = require('../../.' + row_lang.LangSet);
+        // client.on("ready", () => {
+        //     // Check if the table "points" exists.
+        //     const tableName = sql_autoban.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'autobanname';").get();
+        //     if (!tableName['count(*)']) {
+        //         // If the table isn't there, create it and setup the database correctly.
+        //         sql_autoban.prepare("CREATE TABLE autobanname (UserName TEXT PRIMARY KEY, GuildID TEXT);").run();
+        //         // Ensure that the "id" row is always unique and indexed.
+        //         sql_autoban.prepare("CREATE UNIQUE INDEX idx_autoban_username ON autobanname (UserName);").run();
+        //         sql_autoban.pragma("synchronous = 1");
+        //         sql_autoban.pragma("journal_mode = wal");
+        //     }
+        //     const tableID = sql_autoban.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'autobanid';").get();
+        //     if (!tableID['count(*)']) {
+        //         // If the table isn't there, create it and setup the database correctly.
+        //         sql_autoban.prepare("CREATE TABLE autobanid (UserID TEXT PRIMARY KEY, UserName TEXT, GuildID TEXT);").run();
+        //         // Ensure that the "id" row is always unique and indexed.
+        //         sql_autoban.prepare("CREATE UNIQUE INDEX idx_autoban_userid ON autobanid (UserID);").run();
+        //         sql_autoban.pragma("synchronous = 1");
+        //         sql_autoban.pragma("journal_mode = wal");
+        //     }
+        
+        //     // And then we have two prepared statements to get and set the score data.
+        //     client.getAutobanName = sql_autoban.prepare("SELECT * FROM autobanname WHERE UserName = ?");
+        //     client.getAutobanID = sql_autoban.prepare("SELECT * FROM autobanid WHERE UserID = ?");
+        //     client.setAutobanName = sql_autoban.prepare("INSERT INTO autobanname (UserName, GuildID) VALUES (@UserName, @GuildID);");
+        //     client.setAutobanID = sql_autoban.prepare("INSERT OR REPLACE INTO autobanid (UserID) VALUES (@UserID);");
+        //     client.delAutobanName = sql_autoban.prepare("DELETE FROM autobanname WHERE UserName = ?");
+        //     client.delAutobanID = sql_autoban.prepare("DELETE FROM autobanid WHERE UserID = ?");
+        // });
+        const usersMap = new Map();
+        const LIMIT = 5;
+        const DIFF = 5000;
+        const TIME = 50000;
+        
+        client.on('messageCreate', async(message) => {
+            const member = message.member;
+            if(message.author.bot) return;
+            
+            if(usersMap.has(message.author.id)) {
+                const userData = usersMap.get(message.author.id);
+                const { lastMessage, timer } = userData;
+                const difference = message.createdTimestamp - lastMessage.createdTimestamp;
+                let msgCount = userData.msgCount;
+                console.log(difference);
+        
+                if(difference > DIFF) {
+                    clearTimeout(timer);
+                    console.log('Cleared Timeout');
+                    userData.msgCount = 1;
+                    userData.lastMessage = message;
+                    userData.timer = setTimeout(() => {
+                        usersMap.delete(message.author.id);
+                        member.roles.remove('905928801396092969')
+                        console.log('Removed from map.')
+                    }, TIME);
+                    usersMap.set(message.author.id, userData)
+                }
+                else {
+                    ++msgCount;
+                    if(parseInt(msgCount) === LIMIT) {
+        
+                        message.reply("Warning: Spamming in this channel is forbidden.");
+                        member.roles.add('905928801396092969')
+                        message.channel.bulkDelete('99', message.author.id);
+                       
+                    } else {
+                        userData.msgCount = msgCount;
+                        usersMap.set(message.author.id, userData);
+                    }
+                }
+            }
+            else {
+                let fn = setTimeout(() => {
+                    usersMap.delete(message.author.id);
+                    member.roles.remove('905928801396092969')
+                    console.log('Removed from map.')
+                }, TIME);
+                usersMap.set(message.author.id, {
+                    msgCount: 1,
+                    lastMessage : message,
+                    timer : fn
+                });
+            }
+        })
+    // }
+};
