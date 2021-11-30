@@ -26,6 +26,15 @@ module.exports = (client, message, chalk, args, Discord) => {
         client.delAuditLogID = sql_auditlog.prepare("DELETE FROM msgdel WHERE AuditLogID = ?");
     });
     client.on('messageDelete', async message => {
+        if(message.author === null) {
+            var embed = new MessageEmbed()
+                .setAuthor(` `)
+                .setColor('ORANGE')
+                .setDescription(`**Uncached Message send in <#${message.channelId}> was deleted**`)
+                .setFooter(`UserID: Uncached`)
+                .setTimestamp(new Date());
+            return client.channels.cache.get(configmain.logchannelid).send({embeds: [embed]});
+        }
         const fetchedLogs = await message.guild.fetchAuditLogs({
             limit: 1,
             type: 'MESSAGE_DELETE',
@@ -35,7 +44,8 @@ module.exports = (client, message, chalk, args, Discord) => {
 
         let timeThen = DateTime.utc().toFormat(timeFormat);
         let dataAuditLogID;
-        dataAuditLogID = client.getAuditLogID.get(msgDelLog.id);
+        // console.log(fetchedLogs);
+        dataAuditLogID = client.getAuditLogID.get(message.id);
         if(!dataAuditLogID) {
             dataAuditLogID = { AuditLogID: `0`, Count: `0`, Date: `${timeThen}` };
         }
