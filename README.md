@@ -2,7 +2,7 @@
 A Discord bot for Logging server actions
 
 Commands
-'''
+```
 Info = ?
   "  user, member, player = Get info of a user or your self
   "  server, guild, community = Get info of this or a server the bot is in.
@@ -14,4 +14,4 @@ Ban = A help to use the command.
 
 kick = A help to use the command.
   "  @username = Kick a tagged user from the server.
-'''
+```
